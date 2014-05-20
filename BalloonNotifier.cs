@@ -29,48 +29,64 @@ namespace BetterOutlookReminder
 
     private void PollForChanges()
     {
-      var outlook = new Outlook.Application();
-      var session = outlook.Session;
-      var folder = session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderCalendar);
-      var items = folder.Items;
-      items.IncludeRecurrences = true;
-      items.Sort("[Start]");
+      try
+      {
+        var outlook = new Outlook.Application();
+        var session = outlook.Session;
+        var folder = session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderCalendar);
+        var items = folder.Items;
+        items.IncludeRecurrences = true;
+        items.Sort("[Start]");
 
-      var from = DateTime.Now;
-      var to = nextTime != null && nextTime > from ? nextTime.Value : DateTime.Today.AddDays(1);
+        var from = DateTime.Now;
+        var to = nextTime != null && nextTime > from ? nextTime.Value : DateTime.Today.AddDays(1);
 
-      var restrictedItems = items.Restrict(string.Format("[Start] >= '{0}' AND [Start] < '{1}'", toOutlookString(from), toOutlookString(to)));
-      //restrictedItems.Sort("[Start]");
+        var restrictedItems = items.Restrict(string.Format("[Start] >= '{0}' AND [Start] < '{1}'", toOutlookString(from), toOutlookString(to)));
+        //restrictedItems.Sort("[Start]");
 
-      setNext(restrictedItems.Cast<object>().Select(getAppointment).FirstOrDefault(o => o != null && o.Start > DateTime.Now.AddSeconds(1)));
+        setNext(restrictedItems.Cast<object>().Select(getAppointment).FirstOrDefault(o => o != null && o.Start > DateTime.Now.AddSeconds(1)));
+      }
+      catch (Exception e)
+      {
+        Trace.WriteLine(e.ToString());
+      }
+
     }
 
     private void setNext(Outlook.AppointmentItem appointment)
     {
-      if (this.appointment == null || this.appointment.EntryID != appointment.EntryID)
+      if (this.appointment == null || appointment == null || this.appointment.EntryID != appointment.EntryID)
       {
         notifyTimer.Stop();
         warningTimer.Stop();
 
         this.appointment = appointment;
-        notifyTimer.Interval = (int)(appointment.Start - DateTime.Now).TotalMilliseconds;
-        notifyTimer.Start();
 
-        notifyIcon.Text = string.Format("Next: {0} - {1}", appointment.Start.ToShortTimeString(),
-                                        appointment.Subject.Shorten(50));
-
-        if (notifyTimer.Interval > 300000)
+        if (appointment != null)
         {
-          warningTimer.Interval = notifyTimer.Interval - 300000;
-          warningTimer.Start();
-        }
 
+          notifyTimer.Interval = (int) (appointment.Start - DateTime.Now).TotalMilliseconds;
+          notifyTimer.Start();
+
+          notifyIcon.Text = string.Format("Next: {0} - {1}", appointment.Start.ToShortTimeString(),
+                                          appointment.Subject.Shorten(40));
+
+          if (notifyTimer.Interval > 300000)
+          {
+            warningTimer.Interval = notifyTimer.Interval - 300000;
+            warningTimer.Start();
+          }
+        }
+        else
+        {
+          notifyIcon.Text = "No further appointments today";
+        }
       }
     }
 
     private string toOutlookString(DateTime date)
     {
-      return date.ToString("MM/dd/yyyy hh:mm tt", CultureInfo.InvariantCulture);
+      return date.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
     }
 
     private Outlook.AppointmentItem getAppointment(object outlookItem)
@@ -100,12 +116,25 @@ namespace BetterOutlookReminder
 
     private void showBalloon(bool warningOnly)
     {
-      var when = appointment.Start.AddMinutes(-1) < DateTime.Now
-                   ? "NOW -"
-                   : "In " + ((int) (appointment.Start - DateTime.Now).TotalMinutes).ToString() + " mins -";
+      try
+      {
+        if (appointment != null)
+        {
 
-      //qq formatting
-      notifyIcon.ShowBalloonTip(warningOnly? 10000 : 60000, when + " " + appointment.Subject.Shorten(30), formatLocation(appointment.Location) + appointment.Body.Shorten(500), warningOnly ? ToolTipIcon.None : ToolTipIcon.Error);      
+          var when = appointment.Start.AddMinutes(-1) < DateTime.Now
+                       ? "NOW -"
+                       : "In " + ((int) (appointment.Start - DateTime.Now).TotalMinutes).ToString() + " mins -";
+
+          //qq formatting
+          notifyIcon.ShowBalloonTip(warningOnly ? 10000 : 60000, when + " " + appointment.Subject.Shorten(30),
+                                    formatLocation(appointment.Location) + appointment.Body.Shorten(500) + " ",
+                                    warningOnly ? ToolTipIcon.None : ToolTipIcon.Error);
+        }
+      }
+      catch (Exception e)
+      {
+        Trace.WriteLine(e.ToString());
+      }
     }
 
     private void warningTimer_Tick(object sender, EventArgs e)
