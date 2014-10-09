@@ -27,6 +27,11 @@
             CheckOutlook();
         }
 
+        public void Force()
+        {
+            CheckOutlook();
+        }
+
         private void PollTimerOnTick(object sender, EventArgs eventArgs)
         {
             CheckOutlook();

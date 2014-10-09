@@ -16,10 +16,13 @@
         private readonly DispatcherTimer hideTimer = new DispatcherTimer();
         private Appointment appointment;
 
+        private Point mouseDownPosition;
+
         public NotificationWindow()
         {
             InitializeComponent();
             hideTimer.Tick += HideTimerOnTick;
+            new PositionPersister().Persist(this);
         }
 
         public void Show(Appointment appointment)
@@ -76,7 +79,24 @@
 
         private void Window_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            HideWindow();
+            if (mouseDownPosition == GetPosition())
+            {
+                HideWindow();
+            }
+        }
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                mouseDownPosition = GetPosition();
+                DragMove();
+            }
+        }
+
+        private Point GetPosition()
+        {
+            return new Point(Left, Top);
         }
     }
 }

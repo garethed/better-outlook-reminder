@@ -11,8 +11,9 @@
     public partial class App : Application
     {
         private readonly NotificationWindow notificationWindow = new NotificationWindow();
-        private TaskbarIcon notifyIcon;
         private readonly DispatcherTimer appointmentTimer = new DispatcherTimer();
+        private TaskbarIcon notifyIcon;
+        private readonly AppointmentChangePoller poller = new AppointmentChangePoller();
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -20,7 +21,6 @@
 
             notifyIcon = (TaskbarIcon)FindResource("NotificationIcon");
             notifyIcon.TrayLeftMouseUp += NotifyIconOnTrayLeftMouseUp;
-            var poller = new AppointmentChangePoller();
             poller.NextAppointmentChanged += PollerOnNextAppointmentChanged;
             poller.Start();
         }
@@ -34,6 +34,7 @@
         private void NotifyIconOnTrayLeftMouseUp(object sender, RoutedEventArgs routedEventArgs)
         {
             notificationWindow.ShowIfAvailable();
+            poller.Force();
         }
 
         private void PollerOnNextAppointmentChanged(object sender, AppointmentChangePoller.NextAppointmentChangedEventHandlerArgs args)
@@ -64,6 +65,11 @@
         {
             appointmentTimer.Stop();
             notificationWindow.ShowIfAvailable();
+        }
+
+        private void MenuItem_OnClick(object sender, RoutedEventArgs e)
+        {
+            Shutdown();
         }
     }
 }

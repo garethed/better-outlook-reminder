@@ -56,6 +56,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WpfScreenHelper">
+      <HintPath>packages\WpfScreenHelper.0.3.0.0\lib\net40\WpfScreenHelper.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -75,6 +78,7 @@
       <DependentUpon>NotificationWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="OutlookService.cs" />
+    <Compile Include="PositionPersister.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

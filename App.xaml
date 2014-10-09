@@ -5,6 +5,13 @@
     <Application.Resources>
         <tb:TaskbarIcon x:Key="NotificationIcon"
                         IconSource="/Alarm clock.ico"
-                        ToolTipText="Loading appointments" />
+                        ToolTipText="Loading appointments">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Quit" Click="MenuItem_OnClick" />
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+
+        </tb:TaskbarIcon>
     </Application.Resources>
 </Application>
