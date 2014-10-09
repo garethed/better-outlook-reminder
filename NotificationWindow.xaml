@@ -1,0 +1,16 @@
+﻿<Window x:Class="BetterOutlookReminder.NotificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Next Outlook Appointment" Height="128" Width="501" Icon="Alarm clock.ico" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True" WindowStyle="None" Background="#FFCB0000" SizeToContent="Width"
+        MouseUp="Window_MouseUp" Left="5" Top="5" AllowsTransparency="True" MinWidth="400">
+    <Grid Margin="16,8,24,8">
+        <TextBlock x:Name="Heading" HorizontalAlignment="Left" Margin="0" TextWrapping="Wrap" VerticalAlignment="Top"
+                   FontSize="36" Text="Heading" Foreground="White" />
+        <TextBlock x:Name="People" HorizontalAlignment="Left" Margin="0,48,0,0" TextWrapping="Wrap" Text="TextBlock"
+                   VerticalAlignment="Top" FontSize="24" Foreground="#FFE4A69C" />
+        <TextBlock x:Name="Location" HorizontalAlignment="Left" Margin="0,80,0,0" TextWrapping="Wrap" Text="TextBlock"
+                   VerticalAlignment="Top" FontSize="20" Foreground="#FFDC9A8F" />
+
+    </Grid>
+</Window>
