@@ -73,6 +73,7 @@
   <ItemGroup>
     <Compile Include="Appointment.cs" />
     <Compile Include="AppointmentChangePoller.cs" />
+    <Compile Include="AppointmentGroup.cs" />
     <Compile Include="NotificationTimer.cs" />
     <Compile Include="NotificationWindow.xaml.cs">
       <DependentUpon>NotificationWindow.xaml</DependentUpon>

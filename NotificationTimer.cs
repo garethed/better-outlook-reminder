@@ -1,15 +1,14 @@
-﻿using System;
-
-namespace BetterOutlookReminder
+﻿namespace BetterOutlookReminder
 {
+    using System;
+    using System.Linq;
     using System.Windows.Threading;
 
-    class NotificationTimer
+    internal class NotificationTimer
     {
-        private DispatcherTimer warningTimer = new DispatcherTimer();
-        private DispatcherTimer notifyTimer = new DispatcherTimer();
-        private Appointment nextAppointment;
-        private NotificationWindow notificationWindow = new NotificationWindow();
+        private readonly DispatcherTimer warningTimer = new DispatcherTimer();
+        private readonly DispatcherTimer notifyTimer = new DispatcherTimer();
+        private AppointmentGroup nextAppointments;
 
         public NotificationTimer()
         {
@@ -17,19 +16,21 @@ namespace BetterOutlookReminder
             notifyTimer.Tick += NotifyTimerOnTick;
         }
 
-        public void updateNextAppointment(Appointment appointment)
+        internal delegate void NotificationDueEvent(object sender, NotificationDueEventArgs args);
+
+        public event NotificationDueEvent NotificationDue;
+
+        public void updateNextAppointment(AppointmentGroup appointments)
         {
             warningTimer.Stop();
             notifyTimer.Stop();
 
-            nextAppointment = appointment;
+            nextAppointments = appointments;
 
-            if (appointment != null)
+            if (appointments != null && appointments.Next.Any())
             {
-
-                notifyTimer.Interval = (appointment.Start - DateTime.Now);
+                notifyTimer.Interval = (appointments.Next.First().Start - DateTime.Now);
                 notifyTimer.Start();
-
 
                 if (notifyTimer.Interval > TimeSpan.FromMinutes(5))
                 {
@@ -38,16 +39,28 @@ namespace BetterOutlookReminder
                 }
             }
         }
+
         private void NotifyTimerOnTick(object sender, EventArgs eventArgs)
         {
             notifyTimer.Stop();
-            notificationWindow.Show(nextAppointment);
         }
 
         private void WarningTimerOnTick(object sender, EventArgs eventArgs)
         {
-            notifyTimer.Stop();
-            notificationWindow.Show(nextAppointment);
+            warningTimer.Stop();
+        }
+
+        private void fireEvent()
+        {
+            if (NotificationDue != null)
+            {
+                NotificationDue(this, new NotificationDueEventArgs { Appointments = nextAppointments });
+            }
+        }
+
+        internal class NotificationDueEventArgs
+        {
+            public AppointmentGroup Appointments;
         }
     }
 }

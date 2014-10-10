@@ -8,7 +8,7 @@
         private readonly OutlookService outlookService = new OutlookService();
         private readonly DispatcherTimer pollTimer = new DispatcherTimer();
 
-        private Appointment nextAppointment;
+        private AppointmentGroup nextAppointments;
         private bool firstCheck = true;
 
         public AppointmentChangePoller()
@@ -39,21 +39,21 @@
 
         private void CheckOutlook()
         {
-            var newAppointment = outlookService.GetNextAppointment();
-            if (newAppointment != nextAppointment || firstCheck)
+            var newAppointments = outlookService.GetNextAppointments();
+            if (newAppointments != nextAppointments || firstCheck)
             {
                 firstCheck = false;
-                nextAppointment = newAppointment;
+                nextAppointments = newAppointments;
                 if (NextAppointmentChanged != null)
                 {
-                    NextAppointmentChanged(this, new NextAppointmentChangedEventHandlerArgs { NextAppointment = nextAppointment });
+                    NextAppointmentChanged(this, new NextAppointmentChangedEventHandlerArgs { NextAppointments = nextAppointments });
                 }
             }
         }
 
         internal class NextAppointmentChangedEventHandlerArgs
         {
-            public Appointment NextAppointment;
+            public AppointmentGroup NextAppointments;
         }
     }
 }

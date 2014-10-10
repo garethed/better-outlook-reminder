@@ -2,6 +2,7 @@
 {
     using Hardcodet.Wpf.TaskbarNotification;
     using System;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Threading;
 
@@ -10,10 +11,12 @@
     /// </summary>
     public partial class App : Application
     {
-        private readonly NotificationWindow notificationWindow = new NotificationWindow();
+        private readonly NotificationWindow notificationWindow = new NotificationWindow(null);
         private readonly DispatcherTimer appointmentTimer = new DispatcherTimer();
-        private TaskbarIcon notifyIcon;
         private readonly AppointmentChangePoller poller = new AppointmentChangePoller();
+        private readonly NotificationTimer timer = new NotificationTimer();
+        private TaskbarIcon notifyIcon;
+        private bool first = true;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -23,12 +26,19 @@
             notifyIcon.TrayLeftMouseUp += NotifyIconOnTrayLeftMouseUp;
             poller.NextAppointmentChanged += PollerOnNextAppointmentChanged;
             poller.Start();
+            timer.NotificationDue += TimerOnNotificationDue;
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             notifyIcon.Dispose();
             base.OnExit(e);
+        }
+
+        private void TimerOnNotificationDue(object sender, NotificationTimer.NotificationDueEventArgs args)
+        {
+            notificationWindow.Show(args.Appointments);
+            UpdateTooltip(args.Appointments);
         }
 
         private void NotifyIconOnTrayLeftMouseUp(object sender, RoutedEventArgs routedEventArgs)
@@ -39,25 +49,15 @@
 
         private void PollerOnNextAppointmentChanged(object sender, AppointmentChangePoller.NextAppointmentChangedEventHandlerArgs args)
         {
-            var appt = args.NextAppointment;
+            var appts = args.NextAppointments;
 
-            notificationWindow.Show(appt);
-            if (appt != null)
-            {
-                notifyIcon.ToolTipText = string.Format("Next: {0} - {1}",
-                    appt.Start.ToShortTimeString(),
-                    appt.Subject);
+            timer.updateNextAppointment(appts);
+            UpdateTooltip(appts);
 
-                if (!appt.HasStarted)
-                {
-                    appointmentTimer.Interval = appt.Start.Subtract(DateTime.Now);
-                    appointmentTimer.Tick += AppointmentTimerOnTick;
-                    appointmentTimer.Start();
-                }
-            }
-            else
+            if (first)
             {
-                notifyIcon.ToolTipText = "No further appointments today";
+                notificationWindow.Show(appts);
+                first = false;
             }
         }
 
@@ -70,6 +70,21 @@
         private void MenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             Shutdown();
+        }
+
+        private void UpdateTooltip(AppointmentGroup appointments)
+        {
+            var next = appointments.Next.FirstOrDefault(a => a.Start > DateTime.Now);
+            if (next != null)
+            {
+                notifyIcon.ToolTipText = string.Format("Next: {0} - {1}",
+                    next.Start.ToShortTimeString(),
+                    next.Subject);
+            }
+            else
+            {
+                notifyIcon.ToolTipText = "No further appointments today";
+            }
         }
     }
 }

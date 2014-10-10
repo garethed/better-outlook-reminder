@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Next Outlook Appointment" Height="128" Width="501" Icon="Alarm clock.ico" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True" WindowStyle="None" Background="#FFCB0000" SizeToContent="Width"
-        MouseUp="Window_MouseUp" Left="5" Top="5" AllowsTransparency="True" MinWidth="400" MouseDown="Window_MouseDown">
+        MouseUp="Window_MouseUp" Left="5" Top="5" AllowsTransparency="True" MinWidth="700" MouseDown="Window_MouseDown"
+        LocationChanged="Window_LocationChanged">
     <Grid Margin="16,8,24,8">
         <TextBlock x:Name="Heading" HorizontalAlignment="Left" Margin="0" TextWrapping="Wrap" VerticalAlignment="Top"
                    FontSize="36" Text="Heading" Foreground="White" />

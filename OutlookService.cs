@@ -9,12 +9,14 @@
 
     internal class OutlookService
     {
-        private Appointment nextAppointment;
+        private AppointmentGroup nextAppointments;
 
-        public Appointment GetNextAppointment()
+        public AppointmentGroup GetNextAppointments()
         {
             try
             {
+                var newAppointments = new AppointmentGroup();
+
                 var outlook = new Application();
                 var session = outlook.Session;
                 var folder = session.GetDefaultFolder(OlDefaultFolders.olFolderCalendar);
@@ -22,43 +24,45 @@
                 items.IncludeRecurrences = true;
                 items.Sort("[Start]");
 
-                var from = DateTime.Now;
-                var to = nextAppointment != null && nextAppointment.Start > from ? nextAppointment.Start : DateTime.Today.AddDays(1);
+                var from = DateTime.Now.AddMinutes(-5);
+                var to = DateTime.Today.AddDays(1);
 
                 var restrictedItems = items.Restrict(string.Format("[Start] >= '{0}' AND [Start] < '{1}'", toOutlookString(from), toOutlookString(to)));
-                //restrictedItems.Sort("[Start]");
 
-                var next = restrictedItems.Cast<object>().Select(getAppointment).FirstOrDefault(o => o != null && o.Start > DateTime.Now.AddSeconds(1));
+                newAppointments.Next = restrictedItems.Cast<object>().Select(getAppointment).Where(o => o != null && o.Start > DateTime.Now).Select(MakeAppointment);
+                nextAppointments = newAppointments;
 
-                var newAppointment = next == null ? null :
-                    new Appointment
-                    {
-                        ID = next.EntryID,
-                        Start = next.Start,
-                        End = next.End,
-                        Subject = next.Subject,
-                        Location = stripBracketedParts(next.Location),
-                        Organizer = stripBracketedParts(next.Organizer),
-                        Recipients = next.Recipients.Cast<Recipient>().Select(r => stripBracketedParts(r.Name)).ToList()
-                    };
-
-                if (newAppointment != null)
-                {
-                    if (newAppointment.Subject.Length > 50)
-                    {
-                        newAppointment.Subject = newAppointment.Subject.Substring(0, 50);
-                    }
-                }
-
-                nextAppointment = newAppointment;
-
-                return newAppointment;
+                return newAppointments;
             }
             catch (Exception e)
             {
                 Trace.WriteLine(e.ToString());
-                return nextAppointment;
+                return nextAppointments;
             }
+        }
+
+        private Appointment MakeAppointment(AppointmentItem appointmentItem)
+        {
+            var newAppointment = appointmentItem == null ? null :
+                new Appointment
+                {
+                    ID = appointmentItem.EntryID,
+                    Start = appointmentItem.Start,
+                    End = appointmentItem.End,
+                    Subject = appointmentItem.Subject,
+                    Location = stripBracketedParts(appointmentItem.Location),
+                    Organizer = stripBracketedParts(appointmentItem.Organizer),
+                    Recipients = appointmentItem.Recipients.Cast<Recipient>().Select(r => stripBracketedParts(r.Name)).ToList()
+                };
+
+            if (newAppointment != null)
+            {
+                if (newAppointment.Subject.Length > 50)
+                {
+                    newAppointment.Subject = newAppointment.Subject.Substring(0, 50);
+                }
+            }
+            return newAppointment;
         }
 
         private string toOutlookString(DateTime date)
@@ -68,6 +72,11 @@
 
         private string stripBracketedParts(string input)
         {
+            if (input == null)
+            {
+                return null;
+            }
+
             foreach (var bracket in "{[(")
             {
                 if (input.Contains(bracket))
