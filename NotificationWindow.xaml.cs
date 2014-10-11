@@ -2,12 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Windows;
     using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Animation;
     using System.Windows.Threading;
+    using WpfScreenHelper;
 
     /// <summary>
     ///     Interaction logic for NotificationWindow.xaml
@@ -17,7 +19,6 @@
         private readonly DispatcherTimer hideTimer = new DispatcherTimer();
         private readonly NotificationWindow parent;
         private readonly List<NotificationWindow> children = new List<NotificationWindow>();
-        private AppointmentGroup appointments;
 
         private Point mouseDownPosition;
 
@@ -34,12 +35,12 @@
 
         public void Show(AppointmentGroup appointments)
         {
+            Trace.WriteLine("Show " + appointments);
+
             if (appointments == null || !appointments.Next.Any())
             {
                 return;
             }
-
-            this.appointments = appointments;
 
             var distinctTimes = 1;
             var prev = appointments.Next.First();
@@ -51,12 +52,10 @@
             {
                 if (appointment.Start > prev.Start)
                 {
-                    distinctTimes++;
-                }
-
-                if (distinctTimes > 2 && appointment.Start.Subtract(first.Start).TotalMinutes > 15)
-                {
-                    break;
+                    if (distinctTimes++ > 2 && appointment.Start.Subtract(first.Start).TotalMinutes > 15)
+                    {
+                        break;
+                    }
                 }
 
                 var child = new NotificationWindow(this);
@@ -67,20 +66,30 @@
                 prevWindow = child;
             }
 
-            // qq move up if off screen
+            EnsureChildrenOnScreen();
         }
 
-        public void ShowIfAvailable()
+        private void EnsureChildrenOnScreen()
         {
-            Show(appointments);
+            if (children.Any())
+            {
+                var screen = Screen.FromPoint(new Point(Left, Top));
+                var deltaBottom = (children.Last().Top + children.Last().Height) - screen.WorkingArea.Bottom + 10;
+                if (deltaBottom > 0)
+                {
+                    var deltaTop = Math.Max(Top - screen.WorkingArea.Top - 10, 0);
+
+                    Top -= Math.Min(deltaBottom, deltaTop);
+                }
+            }
         }
 
         private void Show(Appointment appointment)
         {
-            Location.Text = (appointment.Location != null ? (appointment.Location + ", ") : "")
-                            + (int)(appointment.End - appointment.Start).TotalMinutes + " mins";
+            Location.Text = Trim((appointment.Location != null ? (appointment.Location + ", ") : "")
+                                 + (int)(appointment.End - appointment.Start).TotalMinutes + " mins", 50);
 
-            People.Text = string.Join(", ", appointment.Recipients.Concat(new[] { appointment.Organizer }).Distinct());
+            People.Text = Trim(string.Join(", ", appointment.Recipients.Concat(new[] { appointment.Organizer }).Distinct()), 50);
 
             if (appointment.HasStarted)
             {
@@ -92,10 +101,17 @@
             {
                 Heading.Text = "Next: " + appointment.Start.ToString("HH:mm") + " - " + appointment.Subject;
                 hideTimer.Interval = TimeSpan.FromSeconds(10);
-                Background = new SolidColorBrush(Color.FromRgb(203, 83, 0));
+                Background = new SolidColorBrush(
+                    (appointment.Start > DateTime.Now.AddHours(0.5))
+                        ? Color.FromRgb(210, 170, 30) : Color.FromRgb(203, 83, 0));
             }
             hideTimer.Start();
             Show();
+        }
+
+        private string Trim(string s, int length)
+        {
+            return s == null || s.Length < length ? s : s.Substring(0, length);
         }
 
         private void HideTimerOnTick(object sender, EventArgs eventArgs)
@@ -103,10 +119,10 @@
             HideWindow();
         }
 
-        private void HideWindow()
+        private void HideWindow(bool fast = false)
         {
             hideTimer.Stop();
-            var anim = new DoubleAnimation(0, new Duration(TimeSpan.FromSeconds(1)));
+            var anim = new DoubleAnimation(0, new Duration(TimeSpan.FromSeconds(fast ? 0.2d : 1d)));
             anim.Completed += (s, _) =>
             {
                 Hide();
@@ -134,16 +150,26 @@
         {
             if (mouseDownPosition == GetPosition())
             {
-                HideWindow();
+                if (parent != null)
+                {
+                    parent.HideWindow(true);
+                }
+                else
+                {
+                    HideWindow(true);
+                }
             }
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (parent == null && e.ChangedButton == MouseButton.Left)
+            if (e.ChangedButton == MouseButton.Left)
             {
                 mouseDownPosition = GetPosition();
-                DragMove();
+                if (parent == null)
+                {
+                    DragMove();
+                }
             }
         }
 

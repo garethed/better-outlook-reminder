@@ -43,8 +43,9 @@
 
         private void NotifyIconOnTrayLeftMouseUp(object sender, RoutedEventArgs routedEventArgs)
         {
-            notificationWindow.ShowIfAvailable();
+            // qq should really be able to see current appointment when clicking here
             poller.Force();
+            notificationWindow.Show(poller.CurrentValue);
         }
 
         private void PollerOnNextAppointmentChanged(object sender, AppointmentChangePoller.NextAppointmentChangedEventHandlerArgs args)
@@ -59,12 +60,6 @@
                 notificationWindow.Show(appts);
                 first = false;
             }
-        }
-
-        private void AppointmentTimerOnTick(object sender, EventArgs eventArgs)
-        {
-            appointmentTimer.Stop();
-            notificationWindow.ShowIfAvailable();
         }
 
         private void MenuItem_OnClick(object sender, RoutedEventArgs e)

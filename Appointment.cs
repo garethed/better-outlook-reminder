@@ -13,10 +13,9 @@
         public string Organizer;
         public IEnumerable<string> Recipients;
 
-
         public bool HasStarted
         {
-            get { return Start < DateTime.Now; }
+            get { return Start <= DateTime.Now.AddSeconds(10); }
         }
 
         public override bool Equals(object obj)
@@ -29,23 +28,25 @@
             {
                 return true;
             }
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
             {
                 return false;
             }
             return Equals((Appointment)obj);
         }
+
         public override int GetHashCode()
         {
             unchecked
             {
-                int hashCode = (ID != null ? ID.GetHashCode() : 0);
+                var hashCode = (ID != null ? ID.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Start.GetHashCode();
                 hashCode = (hashCode * 397) ^ (Subject != null ? Subject.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Location != null ? Location.GetHashCode() : 0);
                 return hashCode;
             }
         }
+
         protected bool Equals(Appointment other)
         {
             return string.Equals(ID, other.ID) && Start.Equals(other.Start) && string.Equals(Subject, other.Subject) && string.Equals(Location, other.Location);

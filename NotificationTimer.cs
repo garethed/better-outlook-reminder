@@ -1,6 +1,7 @@
 ﻿namespace BetterOutlookReminder
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Windows.Threading;
 
@@ -42,11 +43,15 @@
 
         private void NotifyTimerOnTick(object sender, EventArgs eventArgs)
         {
+            Trace.WriteLine("NotifyTimer.tick " + nextAppointments);
+            fireEvent();
             notifyTimer.Stop();
         }
 
         private void WarningTimerOnTick(object sender, EventArgs eventArgs)
         {
+            Trace.WriteLine("WarningTimer.tick " + nextAppointments);
+            fireEvent();
             warningTimer.Stop();
         }
 

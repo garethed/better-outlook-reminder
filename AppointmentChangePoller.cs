@@ -1,6 +1,7 @@
 ﻿namespace BetterOutlookReminder
 {
     using System;
+    using System.Diagnostics;
     using System.Windows.Threading;
 
     internal class AppointmentChangePoller
@@ -21,6 +22,11 @@
 
         public event NextAppointmentChangedEventHandler NextAppointmentChanged;
 
+        public AppointmentGroup CurrentValue
+        {
+            get { return nextAppointments; }
+        }
+
         public void Start()
         {
             pollTimer.Start();
@@ -34,6 +40,7 @@
 
         private void PollTimerOnTick(object sender, EventArgs eventArgs)
         {
+            Trace.WriteLine("PollTimer.tick");
             CheckOutlook();
         }
 
@@ -46,6 +53,7 @@
                 nextAppointments = newAppointments;
                 if (NextAppointmentChanged != null)
                 {
+                    Trace.WriteLine("AppointmentChange.fire " + newAppointments);
                     NextAppointmentChanged(this, new NextAppointmentChangedEventHandlerArgs { NextAppointments = nextAppointments });
                 }
             }

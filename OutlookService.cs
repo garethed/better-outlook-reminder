@@ -29,7 +29,8 @@
 
                 var restrictedItems = items.Restrict(string.Format("[Start] >= '{0}' AND [Start] < '{1}'", toOutlookString(from), toOutlookString(to)));
 
-                newAppointments.Next = restrictedItems.Cast<object>().Select(getAppointment).Where(o => o != null && o.Start > DateTime.Now).Select(MakeAppointment);
+                newAppointments.Next = restrictedItems.Cast<object>().Select(getAppointment)
+                                                      .Where(o => o != null && o.Start >= DateTime.Now).Select(MakeAppointment).ToList();
                 nextAppointments = newAppointments;
 
                 return newAppointments;
@@ -55,13 +56,6 @@
                     Recipients = appointmentItem.Recipients.Cast<Recipient>().Select(r => stripBracketedParts(r.Name)).ToList()
                 };
 
-            if (newAppointment != null)
-            {
-                if (newAppointment.Subject.Length > 50)
-                {
-                    newAppointment.Subject = newAppointment.Subject.Substring(0, 50);
-                }
-            }
             return newAppointment;
         }
 
