@@ -45,16 +45,14 @@
         private Appointment MakeAppointment(AppointmentItem appointmentItem)
         {
             var newAppointment = appointmentItem == null ? null :
-                new Appointment
-                {
-                    ID = appointmentItem.EntryID,
-                    Start = appointmentItem.Start,
-                    End = appointmentItem.End,
-                    Subject = appointmentItem.Subject,
-                    Location = stripBracketedParts(appointmentItem.Location),
-                    Organizer = stripBracketedParts(appointmentItem.Organizer),
-                    Recipients = appointmentItem.Recipients.Cast<Recipient>().Select(r => stripBracketedParts(r.Name)).ToList()
-                };
+                new Appointment(
+                    appointmentItem.EntryID,
+                    appointmentItem.Start,
+                    appointmentItem.End,
+                    appointmentItem.Subject,
+                    appointmentItem.Location,
+                    appointmentItem.Organizer,
+                    appointmentItem.Recipients.Cast<Recipient>().Select(r => r.Name));
 
             return newAppointment;
         }
@@ -62,23 +60,6 @@
         private string toOutlookString(DateTime date)
         {
             return date.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
-        }
-
-        private string stripBracketedParts(string input)
-        {
-            if (input == null)
-            {
-                return null;
-            }
-
-            foreach (var bracket in "{[(")
-            {
-                if (input.Contains(bracket))
-                {
-                    input = input.Substring(0, input.IndexOf(bracket));
-                }
-            }
-            return input.Trim();
         }
 
         private AppointmentItem getAppointment(object outlookItem)
