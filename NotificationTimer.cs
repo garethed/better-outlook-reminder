@@ -30,13 +30,18 @@
 
             if (appointments != null && appointments.Next.Any())
             {
-                notifyTimer.Interval = (appointments.Next.First().Start - DateTime.Now);
-                notifyTimer.Start();
+                var interval = (appointments.Next.First().Start - DateTime.Now);
 
-                if (notifyTimer.Interval > TimeSpan.FromMinutes(5))
+                if (interval.TotalSeconds > 1)
                 {
-                    warningTimer.Interval = notifyTimer.Interval.Subtract(TimeSpan.FromMinutes(5));
-                    warningTimer.Start();
+                    notifyTimer.Interval = interval;
+                    notifyTimer.Start();
+
+                    if (notifyTimer.Interval > TimeSpan.FromMinutes(5))
+                    {
+                        warningTimer.Interval = notifyTimer.Interval.Subtract(TimeSpan.FromMinutes(5));
+                        warningTimer.Start();
+                    }
                 }
             }
         }

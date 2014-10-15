@@ -93,7 +93,14 @@
 
             if (appointment.HasStarted)
             {
-                hideTimer.Interval = appointment.End - DateTime.Now;
+                var interval = appointment.End - DateTime.Now;
+
+                if (interval.TotalSeconds < 30)
+                {
+                    interval = TimeSpan.FromSeconds(30);
+                }
+
+                hideTimer.Interval = interval;
                 Heading.Text = "NOW: " + appointment.Subject;
                 Background = new SolidColorBrush(Color.FromRgb(203, 0, 0));
             }
