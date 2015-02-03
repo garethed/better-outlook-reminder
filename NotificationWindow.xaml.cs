@@ -146,7 +146,7 @@
         private void UpdateTiming()
         {
             LabelTime.FontSize = 60;
-            LabelTime.Margin = new Thickness(0, -15, 0, -10);
+            LabelTime.Margin = new Thickness(0, -5, 0, 15);
 
             LabelIn.Foreground = Background;
             LabelTime.Foreground = Background;
@@ -159,16 +159,29 @@
 
             if (!appointment.HasStarted)
             {
-                if (ago.TotalHours < 1.5f)
+                if (ago.TotalHours < 1)
                 {
-                    LabelMinutes.Text = "MINUTES";
+                    LabelMinutes.Text = "MINUTE";
                     LabelTime.Text = ago.TotalMinutes.ToString("0");
+                    if (ago.TotalMinutes >= 2)
+                    {
+                        LabelMinutes.Text += "S";
+
+                    }
                 }
                 else
                 {
-                    LabelMinutes.Text = "HOURS";
+                    LabelMinutes.Text = "HOUR";
                     // round up a bit - e.g. 2h50m should say "in 3h"
-                    LabelTime.Text = (((int)(ago.TotalMinutes + 10) / 30) / 2f).ToString();
+                    var hours = (((int)(ago.TotalMinutes + 10) / 30) / 2f);
+                    LabelTime.Text = hours.ToString();
+
+                    if (hours > 1)
+                    {
+                        LabelMinutes.Text += "S";
+
+                    }
+
                 }
 
             }
@@ -182,7 +195,7 @@
                 {
                     LabelTime.Text = "NOW";
                     LabelTime.FontSize = 38;
-                    LabelTime.Margin = new Thickness(0, 5, 0, 0);
+                    LabelTime.Margin = new Thickness(0, 14, 0, -4);
                     LabelMinutes.Visibility = System.Windows.Visibility.Hidden;
                 }
                 else
@@ -192,10 +205,6 @@
                 }
 
             }
-
-            LabelTime.Visibility = System.Windows.Visibility.Collapsed;
-            LabelMinutes.Visibility = System.Windows.Visibility.Collapsed;
-            LabelIn.Visibility = System.Windows.Visibility.Collapsed;
 
         }
 

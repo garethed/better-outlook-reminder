@@ -23,12 +23,12 @@
                    VerticalAlignment="Top" FontSize="24" Foreground="#FFD3C198" Grid.Column="1" Grid.Row="1"/>
         <TextBlock x:Name="Location" HorizontalAlignment="Left" Margin="8,0,16,0" TextWrapping="Wrap" Text="TextBlock"
                    VerticalAlignment="Top" FontSize="20" Foreground="#FFDCC78F" Grid.Column="1" Grid.Row="2"/>
-        <Rectangle Fill="#FFFFFF" HorizontalAlignment="Left" Height="128" VerticalAlignment="Top" Width="120" Grid.Column="0" Grid.RowSpan="3" Margin="4,4,4,4"/>
+        <Rectangle Fill="#FFFFFF" HorizontalAlignment="Left" Height="128" VerticalAlignment="Top" Width="104" Grid.Column="0" Grid.RowSpan="3" Margin="4,4,4,4"/>
 
-        <StackPanel HorizontalAlignment="Left" Margin="8,8,0,0" Grid.RowSpan="3" VerticalAlignment="Top" Width="99" Height="110">
-            <TextBlock x:Name="LabelIn" HorizontalAlignment="Left" TextWrapping="Wrap" Text="IN" VerticalAlignment="Top" Width="98" FontSize="14" Foreground="#FFCB5300" Margin="5,5,0,0"/>
-            <TextBlock x:Name="LabelTime" HorizontalAlignment="Center" TextWrapping="Wrap" Text="NOW" VerticalAlignment="Center" Width="98" FontSize="38" TextAlignment="Center" Foreground="#FFCB5300" Margin="0,5,0,-25" FontFamily="Segoe UI Semibold" Height="80"/>
-            <TextBlock x:Name="LabelMinutes" HorizontalAlignment="Right" TextAlignment="Right" TextWrapping="Wrap" Text="MINUTES" VerticalAlignment="Top" Width="98" FontSize="14" Foreground="#FFCB5300" Margin="0,6,0,0"/>
+        <StackPanel HorizontalAlignment="Left" Margin="4,4,4,4" Grid.RowSpan="3" VerticalAlignment="Top" Width="100" Height="120 ">
+            <TextBlock x:Name="LabelIn" HorizontalAlignment="Left" TextWrapping="Wrap" Text="IN" VerticalAlignment="Top" Width="100" FontSize="14" Foreground="#FFCB5300" Margin="4,0,0,0" Height="20"/>
+            <TextBlock x:Name="LabelTime" HorizontalAlignment="Left" TextWrapping="Wrap" Text="30" VerticalAlignment="Top" Width="100" FontSize="60" TextAlignment="Center" Foreground="#FFCB5300" Margin="0,-5,0,15" FontFamily="Segoe UI Semibold" Height="70"/>
+            <TextBlock x:Name="LabelMinutes" HorizontalAlignment="Right" TextAlignment="Right" TextWrapping="Wrap" Text="MINUTES" VerticalAlignment="Top" Width="100" FontSize="14" Foreground="#FFCB5300" Margin="0" Height="20"/>
         </StackPanel>
 
     </Grid>
