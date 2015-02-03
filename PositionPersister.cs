@@ -26,6 +26,8 @@
 
             window.Activated += form_Load;
             window.LocationChanged += form_Save;
+
+            form_Load(this, EventArgs.Empty);
         }
 
         private void form_Save(object sender, EventArgs e)
