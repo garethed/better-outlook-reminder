@@ -12,16 +12,22 @@
     using WpfScreenHelper;
 
     /// <summary>
-    ///     Interaction logic for NotificationWindow.xaml
+    /// Interaction logic for NotificationWindow.xaml
     /// </summary>
     public partial class NotificationWindow : Window
     {
+        private static Color BackgroundOverdue = Color.FromRgb(203, 0, 0);
+        private static Color BackgroundSoon = Color.FromRgb(203, 83, 0);
+        private static Color BackgroundLater = Color.FromRgb(210, 170, 30);
+
         private readonly DispatcherTimer hideTimer = new DispatcherTimer();
+        private readonly DispatcherTimer updateTimer = new DispatcherTimer();
         private readonly NotificationWindow parent;
         private readonly List<NotificationWindow> children = new List<NotificationWindow>();
 
-        private Point mouseDownPosition;
+        private Appointment appointment;
 
+        private Point mouseDownPosition;
         public NotificationWindow(NotificationWindow parent)
         {
             this.parent = parent;
@@ -29,6 +35,7 @@
             if (this.parent == null)
             {
                 hideTimer.Tick += HideTimerOnTick;
+                updateTimer.Tick += UpdateTimerOnTick;
                 new PositionPersister().Persist(this);
             }
         }
@@ -84,36 +91,112 @@
             }
         }
 
+        private Color GetBackground(Appointment appointment) {
+            if (appointment.HasStarted) {
+                return BackgroundOverdue;
+            }
+            else if (appointment.Start > DateTime.Now.AddHours(0.5)) {
+                return BackgroundLater;
+            }
+            return BackgroundSoon;
+        }
+
         private void Show(Appointment appointment)
         {
+            this.appointment = appointment;
+
             Location.Text = Trim((appointment.Location != null ? (appointment.Location + ", ") : "")
                                  + (int)(appointment.End - appointment.Start).TotalMinutes + " mins", 50);
 
             People.Text = Trim(string.Join(", ", appointment.Recipients.Concat(new[] { appointment.Organizer }).Distinct()), 50);
 
+            Heading.Text = appointment.Start.ToString("HH:mm") + " - " + appointment.Subject;
+
+            var interval = appointment.End - DateTime.Now;
+            Background = new SolidColorBrush(GetBackground(appointment));
+
             if (appointment.HasStarted)
             {
-                var interval = appointment.End - DateTime.Now;
-
                 if (interval.TotalSeconds < 30)
                 {
                     interval = TimeSpan.FromSeconds(30);
                 }
 
                 hideTimer.Interval = interval;
-                Heading.Text = "NOW: " + appointment.Subject;
-                Background = new SolidColorBrush(Color.FromRgb(203, 0, 0));
+
             }
             else
             {
-                Heading.Text = "Next: " + appointment.Start.ToString("HH:mm") + " - " + appointment.Subject;
                 hideTimer.Interval = TimeSpan.FromSeconds(10);
-                Background = new SolidColorBrush(
-                    (appointment.Start > DateTime.Now.AddHours(0.5))
-                        ? Color.FromRgb(210, 170, 30) : Color.FromRgb(203, 83, 0));
             }
+
+            UpdateTiming();
+
+            if (interval.TotalMinutes > 1)
+            {
+                updateTimer.Interval = TimeSpan.FromMinutes(1);
+                updateTimer.Start();
+            }
+
+
             hideTimer.Start();
             Show();
+        }
+
+        private void UpdateTiming()
+        {
+            LabelTime.FontSize = 60;
+            LabelTime.Margin = new Thickness(0, -15, 0, -10);
+
+            LabelIn.Foreground = Background;
+            LabelTime.Foreground = Background;
+            LabelMinutes.Foreground = Background;
+
+            LabelMinutes.Visibility = System.Windows.Visibility.Visible;
+            LabelIn.Visibility = System.Windows.Visibility.Visible;
+
+            var ago = appointment.Start - DateTime.Now;
+
+            if (!appointment.HasStarted)
+            {
+                if (ago.TotalHours < 1.5f)
+                {
+                    LabelMinutes.Text = "MINUTES";
+                    LabelTime.Text = ago.TotalMinutes.ToString("0");
+                }
+                else
+                {
+                    LabelMinutes.Text = "HOURS";
+                    // round up a bit - e.g. 2h50m should say "in 3h"
+                    LabelTime.Text = (((int)(ago.TotalMinutes + 10) / 30) / 2f).ToString();
+                }
+
+            }
+            else
+            {
+                LabelIn.Visibility = System.Windows.Visibility.Hidden;
+                ago = -ago;
+
+
+                if (ago.TotalMinutes < 2)
+                {
+                    LabelTime.Text = "NOW";
+                    LabelTime.FontSize = 38;
+                    LabelTime.Margin = new Thickness(0, 5, 0, 0);
+                    LabelMinutes.Visibility = System.Windows.Visibility.Hidden;
+                }
+                else
+                {
+                    LabelTime.Text = ago.TotalMinutes.ToString("0");
+                    LabelMinutes.Text = "MINUTES AGO";
+                }
+
+            }
+
+            LabelTime.Visibility = System.Windows.Visibility.Collapsed;
+            LabelMinutes.Visibility = System.Windows.Visibility.Collapsed;
+            LabelIn.Visibility = System.Windows.Visibility.Collapsed;
+
         }
 
         private string Trim(string s, int length)
@@ -126,9 +209,20 @@
             HideWindow();
         }
 
+        private void UpdateTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            UpdateTiming();
+            foreach (var child in children)
+            {
+                child.UpdateTiming();
+            }
+        }
+
+
         private void HideWindow(bool fast = false)
         {
             hideTimer.Stop();
+            updateTimer.Stop();
             var anim = new DoubleAnimation(0, new Duration(TimeSpan.FromSeconds(fast ? 0.2d : 1d)));
             anim.Completed += (s, _) =>
             {
