@@ -1,12 +1,13 @@
-﻿namespace BetterOutlookReminder
-{
-    using Microsoft.Office.Interop.Outlook;
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Linq;
-    using Exception = System.Exception;
+﻿using Microsoft.Exchange.WebServices.Data;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.DirectoryServices.AccountManagement;
+using System.Linq;
+using ExchangeAppointment = Microsoft.Exchange.WebServices.Data.Appointment;
 
+namespace BetterOutlookReminder
+{
     internal class OutlookService
     {
         private AppointmentGroup nextAppointments;
@@ -17,22 +18,24 @@
             {
                 var newAppointments = new AppointmentGroup();
 
-                var outlook = new Application();
-                var session = outlook.Session;
-                var folder = session.GetDefaultFolder(OlDefaultFolders.olFolderCalendar);
-                var items = folder.Items;
-                items.IncludeRecurrences = true;
-                items.Sort("[Start]");
+                var service = new ExchangeService();
+                service.UseDefaultCredentials = true;
+                service.AutodiscoverUrl(UserPrincipal.Current.EmailAddress);
 
-                var from = DateTime.Now.AddMinutes(-5);
-                var to = DateTime.Today.AddDays(1);
 
-                var restrictedItems = items.Restrict(string.Format("[Start] >= '{0}' AND [Start] < '{1}'", toOutlookString(from), toOutlookString(to)));
+                DateTime from = DateTime.Now.AddMinutes(-5);
+                DateTime to = DateTime.Today.AddDays(1);
 
-                newAppointments.Next = restrictedItems.Cast<object>().Select(getAppointment)
-                                                      .Where(o => o != null && o.Start >= DateTime.Now).Select(MakeAppointment).ToList();
+
+                IEnumerable<Appointment> appointments =
+                    service.FindAppointments(WellKnownFolderName.Calendar, new CalendarView(from, to))
+                        .Select(MakeAppointment);
+
+                newAppointments.Next =
+                    appointments.Where(o => o != null && o.Start >= DateTime.Now)
+                        .OrderBy(o => o.Start).ToList();
+
                 nextAppointments = newAppointments;
-
                 return newAppointments;
             }
             catch (Exception e)
@@ -42,37 +45,20 @@
             }
         }
 
-        private Appointment MakeAppointment(AppointmentItem appointmentItem)
+        private Appointment MakeAppointment(ExchangeAppointment appointmentItem)
         {
-            var newAppointment = appointmentItem == null ? null :
-                new Appointment(
-                    appointmentItem.EntryID,
+            Appointment newAppointment = appointmentItem == null
+                ? null
+                : new Appointment(
+                    appointmentItem.Id.UniqueId,
                     appointmentItem.Start,
                     appointmentItem.End,
                     appointmentItem.Subject,
                     appointmentItem.Location,
-                    appointmentItem.Organizer,
-                    appointmentItem.Recipients.Cast<Recipient>().Select(r => r.Name));
+                    appointmentItem.Organizer.Name,
+                    appointmentItem.RequiredAttendees.Union(appointmentItem.OptionalAttendees).Select(a => a.Name));
 
             return newAppointment;
-        }
-
-        private string toOutlookString(DateTime date)
-        {
-            return date.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
-        }
-
-        private AppointmentItem getAppointment(object outlookItem)
-        {
-            if (outlookItem is AppointmentItem)
-            {
-                return (AppointmentItem)outlookItem;
-            }
-            if (outlookItem is MeetingItem)
-            {
-                return ((MeetingItem)outlookItem).GetAssociatedAppointment(false);
-            }
-            return null;
         }
     }
 }

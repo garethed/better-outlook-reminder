@@ -1,12 +1,10 @@
-﻿using System.Threading;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using System;
+using System.Linq;
+using System.Windows;
 
 namespace BetterOutlookReminder
 {
-    using Hardcodet.Wpf.TaskbarNotification;
-    using System;
-    using System.Linq;
-    using System.Windows;
-
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
@@ -15,8 +13,8 @@ namespace BetterOutlookReminder
         private readonly NotificationWindow notificationWindow = new NotificationWindow(null);
         private readonly AppointmentChangePoller poller = new AppointmentChangePoller();
         private readonly NotificationTimer timer = new NotificationTimer();
-        private TaskbarIcon notifyIcon;
         private bool first = true;
+        private TaskbarIcon notifyIcon;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -25,14 +23,6 @@ namespace BetterOutlookReminder
             notifyIcon = (TaskbarIcon) FindResource("NotificationIcon");
             notifyIcon.TrayLeftMouseUp += NotifyIconOnTrayLeftMouseUp;
             poller.NextAppointmentChanged += PollerOnNextAppointmentChanged;
-
-            // If the app runs too quickly at Windows startup then it can show a nasty security
-            // warning. A short delay fixes this. (The app can run without outlook - we use the
-            // absence of outlook running as a good-enough indicator that the system is just booting)
-            if (!System.Diagnostics.Debugger.IsAttached)
-            {
-                Thread.Sleep(TimeSpan.FromSeconds(10));
-            }
 
             poller.Start();
             timer.NotificationDue += TimerOnNotificationDue;
@@ -60,7 +50,7 @@ namespace BetterOutlookReminder
         private void PollerOnNextAppointmentChanged(object sender,
             AppointmentChangePoller.NextAppointmentChangedEventHandlerArgs args)
         {
-            var appts = args.NextAppointments;
+            AppointmentGroup appts = args.NextAppointments;
 
             timer.updateNextAppointment(appts);
             UpdateTooltip(appts);
@@ -79,7 +69,7 @@ namespace BetterOutlookReminder
 
         private void UpdateTooltip(AppointmentGroup appointments)
         {
-            var next = appointments.Next.FirstOrDefault(a => a.Start > DateTime.Now);
+            Appointment next = appointments.Next.FirstOrDefault(a => a.Start > DateTime.Now);
             if (next != null)
             {
                 notifyIcon.ToolTipText = string.Format("Next: {0} - {1}",

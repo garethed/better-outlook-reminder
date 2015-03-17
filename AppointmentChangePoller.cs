@@ -1,16 +1,16 @@
-﻿namespace BetterOutlookReminder
-{
-    using System;
-    using System.Diagnostics;
-    using System.Windows.Threading;
+﻿using System;
+using System.Diagnostics;
+using System.Windows.Threading;
 
+namespace BetterOutlookReminder
+{
     internal class AppointmentChangePoller
     {
         private readonly OutlookService outlookService = new OutlookService();
         private readonly DispatcherTimer pollTimer = new DispatcherTimer();
 
-        private AppointmentGroup nextAppointments;
         private bool firstCheck = true;
+        private AppointmentGroup nextAppointments;
 
         public AppointmentChangePoller()
         {
@@ -18,14 +18,12 @@
             pollTimer.Tick += PollTimerOnTick;
         }
 
-        internal delegate void NextAppointmentChangedEventHandler(object sender, NextAppointmentChangedEventHandlerArgs args);
-
-        public event NextAppointmentChangedEventHandler NextAppointmentChanged;
-
         public AppointmentGroup CurrentValue
         {
             get { return nextAppointments; }
         }
+
+        public event NextAppointmentChangedEventHandler NextAppointmentChanged;
 
         public void Start()
         {
@@ -35,6 +33,7 @@
 
         public void Force()
         {
+            Trace.WriteLine("PollTimer.Force");
             CheckOutlook();
         }
 
@@ -46,7 +45,7 @@
 
         private void CheckOutlook()
         {
-            var newAppointments = outlookService.GetNextAppointments();
+            AppointmentGroup newAppointments = outlookService.GetNextAppointments();
             if (newAppointments != nextAppointments || firstCheck)
             {
                 firstCheck = false;
@@ -54,10 +53,14 @@
                 if (NextAppointmentChanged != null)
                 {
                     Trace.WriteLine("AppointmentChange.fire " + newAppointments);
-                    NextAppointmentChanged(this, new NextAppointmentChangedEventHandlerArgs { NextAppointments = nextAppointments });
+                    NextAppointmentChanged(this,
+                        new NextAppointmentChangedEventHandlerArgs {NextAppointments = nextAppointments});
                 }
             }
         }
+
+        internal delegate void NextAppointmentChangedEventHandler(
+            object sender, NextAppointmentChangedEventHandlerArgs args);
 
         internal class NextAppointmentChangedEventHandlerArgs
         {
