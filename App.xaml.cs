@@ -1,4 +1,6 @@
-﻿using Hardcodet.Wpf.TaskbarNotification;
+﻿using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Hardcodet.Wpf.TaskbarNotification;
 using System;
 using System.Linq;
 using System.Windows;
@@ -15,6 +17,8 @@ namespace BetterOutlookReminder
         private readonly NotificationTimer timer = new NotificationTimer();
         private bool first = true;
         private TaskbarIcon notifyIcon;
+        private readonly ImageSource connectedIcon = new BitmapImage(new Uri("pack://application:,,,/Alarm clock.ico"));
+        private readonly ImageSource disconnectedIcon = new BitmapImage(new Uri("pack://application:,,,/disconnected.ico"));
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -69,17 +73,28 @@ namespace BetterOutlookReminder
 
         private void UpdateTooltip(AppointmentGroup appointments)
         {
-            Appointment next = appointments.Next.FirstOrDefault(a => a.Start > DateTime.Now);
-            if (next != null)
+            if (appointments != null)
             {
-                notifyIcon.ToolTipText = string.Format("Next: {0} - {1}",
-                    next.Start.ToShortTimeString(),
-                    next.Subject);
+                notifyIcon.IconSource = connectedIcon;
+
+                Appointment next = appointments.Next.FirstOrDefault(a => a.Start > DateTime.Now);
+                if (next != null)
+                {
+                    notifyIcon.ToolTipText = string.Format("Next: {0} - {1}",
+                        next.Start.ToShortTimeString(),
+                        next.Subject);
+                }
+                else
+                {
+                    notifyIcon.ToolTipText = "No further appointments today";
+                }
             }
             else
             {
-                notifyIcon.ToolTipText = "No further appointments today";
+                notifyIcon.ToolTipText = "Unable to contact exchange server";
+                notifyIcon.IconSource = disconnectedIcon;
             }
+
         }
     }
 }
