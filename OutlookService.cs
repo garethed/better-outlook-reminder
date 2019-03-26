@@ -1,4 +1,5 @@
-﻿using Microsoft.Exchange.WebServices.Data;
+﻿using Meziantou.Framework.Win32;
+using Microsoft.Exchange.WebServices.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,15 +13,51 @@ namespace BetterOutlookReminder
     {
         private AppointmentGroup nextAppointments;
 
+        public WebCredentials credentials;
+
+        private bool lastUpdateSucceeded = true;
+
+        public OutlookService()
+        {
+            GetCredentials();
+        }
+
+        public void GetCredentials()
+        {
+            var cred = CredentialManager.ReadCredential("BetterOutlookReminder");
+
+            if (cred == null || !lastUpdateSucceeded)
+            {
+                var credresult = CredentialManager.PromptForCredentials(IntPtr.Zero, "Enter your Outlook365 credentials (email address and password)", "Better Outlook Reminders", null, CredentialSaveOption.Hidden);
+                credentials = new Microsoft.Exchange.WebServices.Data.WebCredentials(credresult.UserName, credresult.Password);
+                CredentialManager.WriteCredential("BetterOutlookReminder", credresult.UserName, credresult.Password, CredentialPersistence.LocalMachine);
+            }
+            else
+            {
+                credentials = new Microsoft.Exchange.WebServices.Data.WebCredentials(cred.UserName, cred.Password);
+            }
+        }
+
+        // Allow autodiscover to follow redirects.
+        static bool RedirectionCallback(string url)
+        {         
+            return url.ToLower().StartsWith("https://");
+        }
+
         public AppointmentGroup GetNextAppointments()
         {
             try
             {
+                //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
                 var newAppointments = new AppointmentGroup();
 
                 var service = new ExchangeService();
-                service.UseDefaultCredentials = true;
-                service.AutodiscoverUrl(UserPrincipal.Current.EmailAddress);
+                service.Credentials = credentials;
+                service.TraceEnabled = true;
+                service.TraceFlags = TraceFlags.All;
+                service.TraceEnablePrettyPrinting = true;
+                service.AutodiscoverUrl(UserPrincipal.Current.EmailAddress, RedirectionCallback);
 
 
                 DateTime from = DateTime.Now.AddMinutes(-5);
@@ -36,10 +73,13 @@ namespace BetterOutlookReminder
                         .OrderBy(o => o.Start).ToList();
 
                 nextAppointments = newAppointments;
+                lastUpdateSucceeded = true;
+
                 return newAppointments;
             }
             catch (Exception e)
             {
+                lastUpdateSucceeded = false;
                 Trace.WriteLine(e.ToString());
                 return nextAppointments;
             }

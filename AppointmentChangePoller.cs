@@ -33,6 +33,7 @@ namespace BetterOutlookReminder
 
         public void Force()
         {
+            outlookService.GetCredentials();
             Trace.WriteLine("PollTimer.Force");
             CheckOutlook();
         }

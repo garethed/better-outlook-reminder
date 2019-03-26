@@ -5,7 +5,7 @@
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <tb:TaskbarIcon x:Key="NotificationIcon"
-                        IconSource="/Alarm clock.ico"
+                        IconSource="/clock_green.ico"
                         ToolTipText="Loading appointments">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>

@@ -4,6 +4,7 @@ using Hardcodet.Wpf.TaskbarNotification;
 using System;
 using System.Linq;
 using System.Windows;
+using Meziantou.Framework.Win32;
 
 namespace BetterOutlookReminder
 {
@@ -17,8 +18,8 @@ namespace BetterOutlookReminder
         private readonly NotificationTimer timer = new NotificationTimer();
         private bool first = true;
         private TaskbarIcon notifyIcon;
-        private readonly ImageSource connectedIcon = new BitmapImage(new Uri("pack://application:,,,/Alarm clock.ico"));
-        private readonly ImageSource disconnectedIcon = new BitmapImage(new Uri("pack://application:,,,/disconnected.ico"));
+        private readonly ImageSource connectedIcon = new BitmapImage(new Uri("pack://application:,,,/clock_green.ico"));
+        private readonly ImageSource disconnectedIcon = new BitmapImage(new Uri("pack://application:,,,/clock_red.ico"));
 
         protected override void OnStartup(StartupEventArgs e)
         {

@@ -3,3 +3,6 @@ bin
 *.suo
 packages/
 deploy.bat
+*.user
+.vs/
+Thumbs.db
