@@ -112,6 +112,11 @@
 
             Heading.Text = appointment.Start.ToString("HH:mm") + " - " + appointment.Subject;
 
+            if (appointment.ButtonLink != null)
+            {
+                ButtonJoin.Content = appointment.ButtonText;
+            }
+
             var interval = appointment.End - DateTime.Now;
             Background = new SolidColorBrush(GetBackground(appointment));
 
@@ -151,6 +156,9 @@
             LabelIn.Foreground = Background;
             LabelTime.Foreground = Background;
             LabelMinutes.Foreground = Background;
+            
+            ButtonJoin.Foreground = Background;
+            ButtonJoin.Visibility = appointment.ButtonLink != null ? Visibility.Visible : Visibility.Hidden;
 
             LabelMinutes.Visibility = System.Windows.Visibility.Visible;
             LabelIn.Visibility = System.Windows.Visibility.Visible;
@@ -230,6 +238,12 @@
 
         private void HideWindow(bool fast = false)
         {
+            if (parent != null)
+            {
+                parent.HideWindow(fast);
+                return;
+            }
+
             hideTimer.Stop();
             updateTimer.Stop();
             var anim = new DoubleAnimation(0, new Duration(TimeSpan.FromSeconds(fast ? 0.2d : 1d)));
@@ -260,14 +274,7 @@
         {
             if (mouseDownPosition == GetPosition())
             {
-                if (parent != null)
-                {
-                    parent.HideWindow(true);
-                }
-                else
-                {
-                    HideWindow(true);
-                }
+                HideWindow(true);
             }
         }
 
@@ -298,6 +305,12 @@
                     children[i].Left = Left;
                 }
             }
+        }
+
+        private void ButtonJoin_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(appointment.ButtonLink);
+            HideWindow();
         }
     }
 }

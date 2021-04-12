@@ -112,7 +112,8 @@ namespace BetterOutlookReminder
                     appointmentItem.Subject,
                     appointmentItem.Location.DisplayName,
                     appointmentItem.Organizer.EmailAddress.Name,
-                    appointmentItem.Attendees.Select(a => a.EmailAddress.Name));
+                    appointmentItem.Attendees.Select(a => a.EmailAddress.Name),
+                    appointmentItem.Body.Content);
 
             return newAppointment;
         }
