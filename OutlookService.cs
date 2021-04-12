@@ -67,9 +67,15 @@ namespace BetterOutlookReminder
 
                 GraphServiceClient graphClient = new GraphServiceClient(authProvider);
 
-                var events = await graphClient.Me.Calendar.Events                    
-                    .Request()
-                    .Filter("start/dateTime ge '" + DateTime.UtcNow.AddMinutes(-5).ToString("o", CultureInfo.InvariantCulture) + "'")// and start/dateTime lt '" + DateTime.UtcNow.AddDays(1).ToString("o", CultureInfo.InvariantCulture) + "'")
+                var queryOptions = new List<QueryOption>()
+                {
+                    new QueryOption("startDateTime", DateTime.UtcNow.AddMinutes(-5).ToString("o", CultureInfo.InvariantCulture)),
+                    new QueryOption("endDateTime", DateTime.UtcNow.AddDays(1).ToString("o", CultureInfo.InvariantCulture))
+                };
+
+                var events = await graphClient.Me.Calendar.CalendarView                    
+                    .Request(queryOptions)
+                    .Top(20)
                     .GetAsync();
 
                 //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
