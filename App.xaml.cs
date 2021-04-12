@@ -21,7 +21,7 @@ namespace BetterOutlookReminder
         private readonly ImageSource connectedIcon = new BitmapImage(new Uri("pack://application:,,,/clock_green.ico"));
         private readonly ImageSource disconnectedIcon = new BitmapImage(new Uri("pack://application:,,,/clock_red.ico"));
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -29,7 +29,7 @@ namespace BetterOutlookReminder
             notifyIcon.TrayLeftMouseUp += NotifyIconOnTrayLeftMouseUp;
             poller.NextAppointmentChanged += PollerOnNextAppointmentChanged;
 
-            poller.Start();
+            await poller.Start();
             timer.NotificationDue += TimerOnNotificationDue;
         }
 
@@ -45,10 +45,10 @@ namespace BetterOutlookReminder
             UpdateTooltip(args.Appointments);
         }
 
-        private void NotifyIconOnTrayLeftMouseUp(object sender, RoutedEventArgs routedEventArgs)
+        private async void NotifyIconOnTrayLeftMouseUp(object sender, RoutedEventArgs routedEventArgs)
         {
             // qq should really be able to see current appointment when clicking here
-            poller.Force();
+            await poller.Force();
             notificationWindow.Show(poller.CurrentValue);
         }
 

@@ -1,41 +1,55 @@
 ﻿using Meziantou.Framework.Win32;
 using Microsoft.Exchange.WebServices.Data;
+using Microsoft.Graph;
+using Microsoft.Graph.Auth;
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.DirectoryServices.AccountManagement;
+using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using ExchangeAppointment = Microsoft.Exchange.WebServices.Data.Appointment;
 
 namespace BetterOutlookReminder
 {
     internal class OutlookService
     {
+        private string[] scopes = new[] { "Calendars.Read" };
+
         private AppointmentGroup nextAppointments;
 
         public WebCredentials credentials;
 
         private bool lastUpdateSucceeded = true;
 
+        IPublicClientApplication app;        
+
         public OutlookService()
         {
-            GetCredentials();
+            app = PublicClientApplicationBuilder
+                .Create("bff2bbd0-39a1-4263-9e06-f6bb37ce8679")
+                .WithDefaultRedirectUri()
+                .Build();
         }
 
         public void GetCredentials()
         {
-            var cred = CredentialManager.ReadCredential("BetterOutlookReminder");
+            var scopes = new[] { "Calendars.Read" };
+            /*var accounts = app.GetAccountsAsync().Result;
 
-            if (cred == null || !lastUpdateSucceeded)
+            AuthenticationResult result;
+
+            try
             {
-                var credresult = CredentialManager.PromptForCredentials(IntPtr.Zero, "Enter your Outlook365 credentials (email address and password)", "Better Outlook Reminders", null, CredentialSaveOption.Hidden);
-                credentials = new Microsoft.Exchange.WebServices.Data.WebCredentials(credresult.UserName, credresult.Password);
-                CredentialManager.WriteCredential("BetterOutlookReminder", credresult.UserName, credresult.Password, CredentialPersistence.LocalMachine);
+                result = app.AcquireTokenSilent(scopes, accounts.First()).ExecuteAsync().Result;
             }
-            else
+            catch (MsalUiRequiredException)
             {
-                credentials = new Microsoft.Exchange.WebServices.Data.WebCredentials(cred.UserName, cred.Password);
-            }
+                result = app.AcquireTokenInteractive(scopes).ExecuteAsync().Result;
+            }*/
+
         }
 
         // Allow autodiscover to follow redirects.
@@ -44,29 +58,25 @@ namespace BetterOutlookReminder
             return url.ToLower().StartsWith("https://");
         }
 
-        public AppointmentGroup GetNextAppointments()
+        public async Task<AppointmentGroup> GetNextAppointments()
         {
-            try
+            
+            try                       
             {
+                InteractiveAuthenticationProvider authProvider = new InteractiveAuthenticationProvider(app, scopes);
+
+                GraphServiceClient graphClient = new GraphServiceClient(authProvider);
+
+                var events = await graphClient.Me.Calendar.Events                    
+                    .Request()
+                    .Filter("start/dateTime ge '" + DateTime.UtcNow.AddMinutes(-5).ToString("o", CultureInfo.InvariantCulture) + "'")// and start/dateTime lt '" + DateTime.UtcNow.AddDays(1).ToString("o", CultureInfo.InvariantCulture) + "'")
+                    .GetAsync();
+
                 //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
                 var newAppointments = new AppointmentGroup();
 
-                var service = new ExchangeService();
-                service.Credentials = credentials;
-                service.TraceEnabled = true;
-                service.TraceFlags = TraceFlags.All;
-                service.TraceEnablePrettyPrinting = true;
-                service.AutodiscoverUrl(UserPrincipal.Current.EmailAddress, RedirectionCallback);
-
-
-                DateTime from = DateTime.Now.AddMinutes(-5);
-                DateTime to = DateTime.Today.AddDays(1);
-
-
-                IEnumerable<Appointment> appointments =
-                    service.FindAppointments(WellKnownFolderName.Calendar, new CalendarView(from, to))
-                        .Select(MakeAppointment);
+                IEnumerable<Appointment> appointments = events.Select(MakeAppointment);
 
                 newAppointments.Next =
                     appointments.Where(o => o != null && o.Start >= DateTime.Now)
@@ -85,20 +95,25 @@ namespace BetterOutlookReminder
             }
         }
 
-        private Appointment MakeAppointment(ExchangeAppointment appointmentItem)
+        private Appointment MakeAppointment(Event appointmentItem)
         {
             Appointment newAppointment = appointmentItem == null
                 ? null
                 : new Appointment(
-                    appointmentItem.Id.UniqueId,
-                    appointmentItem.Start,
-                    appointmentItem.End,
+                    appointmentItem.Id,
+                    ConvertDateTime(appointmentItem.Start),
+                    ConvertDateTime(appointmentItem.End),
                     appointmentItem.Subject,
-                    appointmentItem.Location,
-                    appointmentItem.Organizer.Name,
-                    appointmentItem.RequiredAttendees.Union(appointmentItem.OptionalAttendees).Select(a => a.Name));
+                    appointmentItem.Location.DisplayName,
+                    appointmentItem.Organizer.EmailAddress.Name,
+                    appointmentItem.Attendees.Select(a => a.EmailAddress.Name));
 
             return newAppointment;
+        }
+
+        private DateTime ConvertDateTime(DateTimeTimeZone dttz)
+        {
+            return TimeZoneInfo.ConvertTime(DateTime.Parse(dttz.DateTime), TimeZoneInfo.FindSystemTimeZoneById(dttz.TimeZone), TimeZoneInfo.Local);
         }
     }
 }

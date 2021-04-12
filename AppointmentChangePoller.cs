@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace BetterOutlookReminder
@@ -25,28 +26,27 @@ namespace BetterOutlookReminder
 
         public event NextAppointmentChangedEventHandler NextAppointmentChanged;
 
-        public void Start()
+        public async Task Start()
         {
             pollTimer.Start();
-            CheckOutlook();
+            await CheckOutlook();
         }
 
-        public void Force()
+        public async Task Force()
         {
-            outlookService.GetCredentials();
             Trace.WriteLine("PollTimer.Force");
-            CheckOutlook();
+            await CheckOutlook();
         }
 
-        private void PollTimerOnTick(object sender, EventArgs eventArgs)
+        private async void PollTimerOnTick(object sender, EventArgs eventArgs)
         {
             Trace.WriteLine("PollTimer.tick");
-            CheckOutlook();
+            await CheckOutlook();
         }
 
-        private void CheckOutlook()
+        private async Task CheckOutlook()
         {
-            AppointmentGroup newAppointments = outlookService.GetNextAppointments();
+            AppointmentGroup newAppointments = await outlookService.GetNextAppointments();
             if (newAppointments != nextAppointments || firstCheck)
             {
                 firstCheck = false;
