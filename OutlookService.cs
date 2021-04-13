@@ -34,30 +34,6 @@ namespace BetterOutlookReminder
                 .Build();
         }
 
-        public void GetCredentials()
-        {
-            var scopes = new[] { "Calendars.Read" };
-            /*var accounts = app.GetAccountsAsync().Result;
-
-            AuthenticationResult result;
-
-            try
-            {
-                result = app.AcquireTokenSilent(scopes, accounts.First()).ExecuteAsync().Result;
-            }
-            catch (MsalUiRequiredException)
-            {
-                result = app.AcquireTokenInteractive(scopes).ExecuteAsync().Result;
-            }*/
-
-        }
-
-        // Allow autodiscover to follow redirects.
-        static bool RedirectionCallback(string url)
-        {         
-            return url.ToLower().StartsWith("https://");
-        }
-
         public async Task<AppointmentGroup> GetNextAppointments()
         {
             
@@ -70,15 +46,13 @@ namespace BetterOutlookReminder
                 var queryOptions = new List<QueryOption>()
                 {
                     new QueryOption("startDateTime", DateTime.UtcNow.AddMinutes(-5).ToString("o", CultureInfo.InvariantCulture)),
-                    new QueryOption("endDateTime", DateTime.UtcNow.AddDays(1).ToString("o", CultureInfo.InvariantCulture))
+                    new QueryOption("endDateTime", DateTime.Today.ToUniversalTime().AddDays(1).ToString("o", CultureInfo.InvariantCulture))
                 };
 
                 var events = await graphClient.Me.Calendar.CalendarView                    
                     .Request(queryOptions)
                     .Top(20)
                     .GetAsync();
-
-                //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 
                 var newAppointments = new AppointmentGroup();
 
