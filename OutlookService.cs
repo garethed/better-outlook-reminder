@@ -32,6 +32,8 @@ namespace BetterOutlookReminder
                 .Create("bff2bbd0-39a1-4263-9e06-f6bb37ce8679")
                 .WithDefaultRedirectUri()
                 .Build();
+
+            TokenCacheHelper.EnableSerialization(app.UserTokenCache);
         }
 
         public async Task<AppointmentGroup> GetNextAppointments()
@@ -45,7 +47,7 @@ namespace BetterOutlookReminder
 
                 var queryOptions = new List<QueryOption>()
                 {
-                    new QueryOption("startDateTime", DateTime.UtcNow.AddMinutes(-5).ToString("o", CultureInfo.InvariantCulture)),
+                    new QueryOption("startDateTime", DateTime.UtcNow.AddMinutes(-15).ToString("o", CultureInfo.InvariantCulture)),
                     new QueryOption("endDateTime", DateTime.Today.ToUniversalTime().AddDays(1).ToString("o", CultureInfo.InvariantCulture))
                 };
 
@@ -59,7 +61,7 @@ namespace BetterOutlookReminder
                 IEnumerable<Appointment> appointments = events.Select(MakeAppointment);
 
                 newAppointments.Next =
-                    appointments.Where(o => o != null && o.Start >= DateTime.Now)
+                    appointments.Where(o => o != null && o.End >= DateTime.Now && o.Start >= DateTime.Now.AddMinutes(-29))
                         .OrderBy(o => o.Start).ToList();
 
                 nextAppointments = newAppointments;

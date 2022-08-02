@@ -105,7 +105,7 @@
         {
             this.appointment = appointment;
 
-            Location.Text = Trim((appointment.Location != null ? (appointment.Location + ", ") : "")
+            Location.Text = Trim((!string.IsNullOrEmpty(appointment.Location) ? (appointment.Location + ", ") : "")
                                  + (int)(appointment.End - appointment.Start).TotalMinutes + " mins", 50);
 
             People.Text = Trim(string.Join(", ", appointment.Recipients.Concat(new[] { appointment.Organizer }).Distinct()), 50);

@@ -31,8 +31,8 @@ namespace BetterOutlookReminder
 
             await poller.Start();
             timer.NotificationDue += TimerOnNotificationDue;
-            ScreenUtils.PausedForFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Paused calendar reminders while full screen", BalloonIcon.None);
-            ScreenUtils.ResumedFromFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Calendar reminders resumed", BalloonIcon.None);
+            //ScreenUtils.PausedForFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Paused calendar reminders while full screen", BalloonIcon.None);
+            //ScreenUtils.ResumedFromFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Calendar reminders resumed", BalloonIcon.None);
         }
 
         protected override void OnExit(ExitEventArgs e)
