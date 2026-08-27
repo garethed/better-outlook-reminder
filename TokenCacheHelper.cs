@@ -46,6 +46,7 @@ namespace BetterOutlookReminder
                         ProtectedData.Protect(args.TokenCache.SerializeMsalV3(), null, DataProtectionScope.CurrentUser));
 
                     Settings.Default.Token = encoded;
+                    Settings.Default.Save();
                 }
             }
         }

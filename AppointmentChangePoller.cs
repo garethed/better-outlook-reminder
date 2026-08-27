@@ -11,6 +11,7 @@ namespace BetterOutlookReminder
         private readonly DispatcherTimer pollTimer = new DispatcherTimer();
 
         private bool firstCheck = true;
+        private bool checkInProgress;
         private AppointmentGroup nextAppointments;
 
         public AppointmentChangePoller()
@@ -45,6 +46,26 @@ namespace BetterOutlookReminder
         }
 
         private async Task CheckOutlook()
+        {
+            // A check can block for a long time waiting on interactive sign-in; don't stack them up.
+            if (checkInProgress)
+            {
+                Trace.WriteLine("PollTimer.skip - check already in progress");
+                return;
+            }
+
+            checkInProgress = true;
+            try
+            {
+                await CheckOutlookInner();
+            }
+            finally
+            {
+                checkInProgress = false;
+            }
+        }
+
+        private async Task CheckOutlookInner()
         {
             AppointmentGroup newAppointments = await outlookService.GetNextAppointments();
             if (newAppointments != nextAppointments || firstCheck)
