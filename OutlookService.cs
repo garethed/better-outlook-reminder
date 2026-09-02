@@ -30,8 +30,6 @@ namespace BetterOutlookReminder
 
         private readonly SemaphoreSlim authLock = new SemaphoreSlim(1, 1);
 
-        private System.Windows.Window authOwnerWindow;
-
         public OutlookService()
         {
             // The broker (WAM) can often satisfy Entra's daily re-auth requirement from the
@@ -39,8 +37,10 @@ namespace BetterOutlookReminder
             // full login. MSAL falls back to the browser if the broker isn't available.
             app = PublicClientApplicationBuilder
                 .Create("bff2bbd0-39a1-4263-9e06-f6bb37ce8679")
+                // Our tenant rather than /common, so only work accounts are ever offered.
+                .WithAuthority(AzureCloudInstance.AzurePublic, "softwire.com")
                 .WithBroker(new BrokerOptions(BrokerOptions.OperatingSystems.Windows))
-                .WithParentActivityOrWindow(GetAuthOwnerWindow)
+                .WithParentActivityOrWindow(() => AuthDialogOwner.Handle)
                 .WithDefaultRedirectUri()
                 .Build();
 
@@ -97,17 +97,29 @@ namespace BetterOutlookReminder
         /// </summary>
         private async Task<string> GetToken()
         {
-            var silent = await TryAcquireSilent();
+            var account = await GetCachedAccount();
+            var silent = await TryAcquireSilent(account);
             if (silent != null) return silent;
 
+            Trace.WriteLine("Auth.silent failed - waiting to sign in interactively");
             await authLock.WaitAsync();
             try
             {
                 // Someone else may have signed in while we waited.
-                silent = await TryAcquireSilent();
+                account = await GetCachedAccount();
+                silent = await TryAcquireSilent(account);
                 if (silent != null) return silent;
 
-                var result = await app.AcquireTokenInteractive(scopes).ExecuteAsync();
+                var request = app.AcquireTokenInteractive(scopes);
+                if (account != null)
+                {
+                    // We already know who signed in last time, so skip the account picker.
+                    request = request.WithAccount(account);
+                }
+
+                Trace.WriteLine("Auth.interactive start for " + (account?.Username ?? "unknown account"));
+                var result = await request.ExecuteAsync();
+                Trace.WriteLine("Auth.interactive done for " + result.Account?.Username);
                 return result.AccessToken;
             }
             finally
@@ -116,9 +128,13 @@ namespace BetterOutlookReminder
             }
         }
 
-        private async Task<string> TryAcquireSilent()
+        private async Task<IAccount> GetCachedAccount()
         {
-            var account = (await app.GetAccountsAsync()).FirstOrDefault();
+            return (await app.GetAccountsAsync()).FirstOrDefault();
+        }
+
+        private async Task<string> TryAcquireSilent(IAccount account)
+        {
             if (account == null) return null;
 
             try
@@ -130,32 +146,6 @@ namespace BetterOutlookReminder
             {
                 return null;
             }
-        }
-
-        /// <summary>
-        /// WAM needs an owner HWND, and auth can fire from a background poll at any moment - so we
-        /// own the dialog with our own invisible window rather than whatever app happens to be in
-        /// the foreground. The notification window is no good: it's topmost and moves around.
-        /// </summary>
-        private IntPtr GetAuthOwnerWindow()
-        {
-            return System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (authOwnerWindow == null)
-                {
-                    authOwnerWindow = new System.Windows.Window
-                    {
-                        Width = 0,
-                        Height = 0,
-                        WindowStyle = System.Windows.WindowStyle.None,
-                        ShowInTaskbar = false,
-                        ShowActivated = false,
-                        Visibility = System.Windows.Visibility.Hidden
-                    };
-                }
-
-                return new System.Windows.Interop.WindowInteropHelper(authOwnerWindow).EnsureHandle();
-            });
         }
 
         private Appointment MakeAppointment(Event appointmentItem)

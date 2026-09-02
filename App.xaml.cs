@@ -2,6 +2,8 @@
 using System.Windows.Media.Imaging;
 using Hardcodet.Wpf.TaskbarNotification;
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using Meziantou.Framework.Win32;
@@ -25,6 +27,9 @@ namespace BetterOutlookReminder
         {
             base.OnStartup(e);
 
+            StartLogging();
+            AuthDialogOwner.Initialize();
+
             notifyIcon = (TaskbarIcon)FindResource("NotificationIcon");
             notifyIcon.TrayLeftMouseUp += NotifyIconOnTrayLeftMouseUp;
             poller.NextAppointmentChanged += PollerOnNextAppointmentChanged;
@@ -33,6 +38,22 @@ namespace BetterOutlookReminder
             timer.NotificationDue += TimerOnNotificationDue;
             //ScreenUtils.PausedForFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Paused calendar reminders while full screen", BalloonIcon.None);
             //ScreenUtils.ResumedFromFullScreen += (s, e2) => notifyIcon.ShowBalloonTip(null, "Calendar reminders resumed", BalloonIcon.None);
+        }
+
+        /// <summary>
+        /// Nothing sees Trace output in a released build, and GetNextAppointments swallows every
+        /// exception, so failures were invisible. Log to a file we can go and read instead.
+        /// </summary>
+        private static void StartLogging()
+        {
+            var directory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "BetterOutlookReminder");
+            Directory.CreateDirectory(directory);
+
+            Trace.Listeners.Add(new TextWriterTraceListener(Path.Combine(directory, "log.txt")));
+            Trace.AutoFlush = true;
+            Trace.WriteLine(DateTime.Now.ToString("o") + " started");
         }
 
         protected override void OnExit(ExitEventArgs e)
